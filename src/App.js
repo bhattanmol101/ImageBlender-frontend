@@ -3,6 +3,10 @@ import Loader from "./Loader";
 import "./App.css";
 
 class App extends Component {
+  componentDidMount() {
+    fetch("/count", { cache: "no-store" });
+  }
+
   constructor(props) {
     super(props);
     this.state = {
@@ -19,7 +23,12 @@ class App extends Component {
     this.handleImageClick2 = this.handleImageClick2.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
-  handleImageClick1 = (event) => {
+
+  async handleImageClick1(event) {
+    this.setState({ isLoading: true });
+    document.getElementById("file1").disabled = true;
+    document.getElementById("file2").disabled = true;
+    document.getElementById("blend").disabled = true;
     var selectedFile = event.target.files[0];
     var reader = new FileReader();
     var imgTag = document.getElementById("img1");
@@ -31,16 +40,16 @@ class App extends Component {
 
     reader.readAsDataURL(selectedFile);
     this.setState({ imgVal1: true });
-    const data = new FormData();
-    data.append("file", document.getElementById("file1").files[0]);
-    fetch("/file1", {
-      method: "POST",
-      body: data,
-    }).catch((err) => {
-      alert("Error occurred with error: " + err);
-    });
-  };
-  handleImageClick2 = (event) => {
+    this.setState({ isLoading: false });
+    document.getElementById("file1").disabled = false;
+    document.getElementById("file2").disabled = false;
+    document.getElementById("blend").disabled = false;
+  }
+  async handleImageClick2(event) {
+    this.setState({ isLoading: true });
+    document.getElementById("file1").disabled = true;
+    document.getElementById("file2").disabled = true;
+    document.getElementById("blend").disabled = true;
     var selectedFile = event.target.files[0];
     var reader = new FileReader();
 
@@ -53,27 +62,33 @@ class App extends Component {
 
     reader.readAsDataURL(selectedFile);
     this.setState({ imgVal2: true });
-    const data = new FormData();
-    data.append("file", document.getElementById("file2").files[0]);
-    fetch("/file2", {
-      method: "POST",
-      body: data,
-    }).catch((err) => {
-      alert("Error occurred with error: " + err);
-    });
-  };
+    this.setState({ isLoading: false });
+    document.getElementById("file1").disabled = false;
+    document.getElementById("file2").disabled = false;
+    document.getElementById("blend").disabled = false;
+  }
   async handleSubmit() {
     this.setState({ err: false });
+    document.getElementById("file1").disabled = true;
+    document.getElementById("file2").disabled = true;
+    document.getElementById("blend").disabled = true;
     if (this.state.imgVal1 && this.state.imgVal2) {
       this.setState({ title: "Blending..." });
       this.setState({ isLoading: true });
-      await fetch("/blend").then((response) => {
+      const data = new FormData();
+      data.append("file", document.getElementById("file1").files[0]);
+      data.append("file", document.getElementById("file2").files[0]);
+      await fetch("/blend", {
+        method: "POST",
+        body: data,
+        cache: "no-store",
+      }).then((response) => {
         if (response.status === 200) {
           response.blob().then((blob) => {
             let url = window.URL.createObjectURL(blob);
             let a = document.createElement("a");
             a.href = url;
-            a.download = "pic.png";
+            a.download = "pic.jpeg";
             a.click();
           });
         } else {
@@ -90,6 +105,9 @@ class App extends Component {
     } else {
       alert("Please select both the images");
     }
+    document.getElementById("file1").disabled = false;
+    document.getElementById("file2").disabled = false;
+    document.getElementById("blend").disabled = false;
   }
   render() {
     return (
@@ -103,13 +121,13 @@ class App extends Component {
             <p>Want to see how it looks when two faces merge.</p>
             <br />
             <p>
-              Then go right ahead and blend two faces. Select photo with a
-              single person in it.
+              Go right ahead and blend two faces. Select photo with a single
+              person in it.
             </p>
           </div>
           <div className="div2">
-            <label>Picture 1</label>
-            <label>Picture 2</label>
+            <label>Face 1</label>
+            <label>Face 2</label>
           </div>
           <div className="div5">
             <img
@@ -138,7 +156,9 @@ class App extends Component {
             />
           </div>
           <div className="div5">
-            <button onClick={this.handleSubmit}>Blend</button>
+            <button id="blend" onClick={this.handleSubmit}>
+              Blend
+            </button>
           </div>
         </div>
       </div>
